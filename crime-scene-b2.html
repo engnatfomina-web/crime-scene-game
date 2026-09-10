@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crime Scene Investigator — B2 Edition</title>
+<style>
+:root{--bg:#0b1220;--panel:#172033;--panel2:#202c42;--gold:#f6c453;--cyan:#67e8f9;--green:#4ade80;--red:#fb7185;--text:#f8fafc;--muted:#b8c4d6}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#263654 0,#0b1220 42%,#080d17 100%);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif;min-height:100vh}
+.wrap{max-width:1120px;margin:auto;padding:26px}header{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}
+h1{font-size:clamp(30px,4vw,48px);margin:0;letter-spacing:-1px}.sub{color:var(--muted);margin:7px 0 0;line-height:1.5}.tag{border:1px solid #735d25;background:#292313;color:var(--gold);padding:9px 14px;border-radius:999px;font-weight:800;white-space:nowrap}
+.progress{height:8px;background:#303b4d;border-radius:20px;overflow:hidden;margin:16px 0 24px}.bar{height:100%;width:0;background:linear-gradient(90deg,var(--gold),#fb923c);transition:.3s}
+.card{background:rgba(23,32,51,.96);border:1px solid #34425a;border-radius:24px;padding:28px;box-shadow:0 22px 70px #0007}
+.case{display:flex;gap:22px}.icon{font-size:58px;background:#0e1625;border-radius:18px;padding:15px;height:max-content}.label{color:var(--cyan);font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:1.5px}.scenario{font-size:20px;line-height:1.65;margin:10px 0 5px}.question{color:#e5e7eb;font-weight:800;margin-top:13px}.options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+button{font:inherit}.option{background:var(--panel2);border:1px solid #43536d;color:var(--text);border-radius:16px;padding:16px;text-align:left;cursor:pointer;transition:.2s;line-height:1.45}.option:hover:not(:disabled){transform:translateY(-2px);border-color:var(--cyan);background:#293953}.option b{color:var(--gold);display:block;margin-bottom:5px}.option:disabled{cursor:default}
+.feedback{display:none;margin-top:18px;padding:17px;border-radius:15px;line-height:1.55}.feedback.good{display:block;background:#0d2819;border:1px solid #267a45}.feedback.bad{display:block;background:#351722;border:1px solid #9f3049}
+.grammar{margin-top:22px;padding:18px;background:#0e1625;border-radius:17px;border:1px solid #2c394d}.grammar h3{margin:0 0 10px;color:var(--gold)}.rule{margin:7px 0;line-height:1.5}.formula{font-weight:850;color:#fff}.tip{color:var(--muted);font-size:14px;margin-top:9px}
+.bottom{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}.score{font-weight:900}.next,.restart{border:0;border-radius:12px;padding:12px 20px;font-weight:900;cursor:pointer}.next{background:var(--gold);color:#151515;display:none}.restart{background:#334155;color:#fff}
+.end{display:none;text-align:center}.trophy{font-size:70px}.final{font-size:58px;font-weight:950;color:var(--gold)}.small{color:var(--muted)}
+@media(max-width:720px){header{flex-direction:column}.options{grid-template-columns:1fr}.case{flex-direction:column}.icon{width:max-content}.wrap{padding:16px}.card{padding:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<div><h1>🕵️ Crime Scene Investigator</h1><p class="sub">B2 Edition — make deductions, reconstruct events and choose the most convincing explanation.</p></div>
+<div class="tag">B2 • Past deductions</div>
+</header>
+<div class="progress"><div class="bar" id="bar"></div></div>
+
+<div class="card" id="game">
+<div class="case">
+<div class="icon" id="icon">🔎</div>
+<div>
+<div class="label" id="label"></div>
+<div class="scenario" id="scenario"></div>
+<div class="question" id="question"></div>
+</div>
+</div>
+<div class="options" id="options"></div>
+<div class="feedback" id="feedback"></div>
+
+<div class="grammar">
+<h3>🧠 Detective's Grammar Kit</h3>
+<div class="rule"><span class="formula">must have been + adjective / noun / place</span> → a strong deduction about a past <b>state, identity or situation</b>.</div>
+<div class="rule"><span class="formula">must have been + verb-ing</span> → a strong deduction about an <b>activity in progress</b> at a particular time.</div>
+<div class="tip">Compare: “The suspect <b>must have been nervous</b>.” = state. “The suspect <b>must have been waiting</b> outside.” = ongoing activity.</div>
+</div>
+
+<div class="bottom"><div class="score">Score: <span id="score">0</span> / <span id="total">10</span></div><button class="next" id="next">Next case →</button><button class="restart" id="restart">Restart</button></div>
+</div>
+
+<div class="card end" id="end">
+<div class="trophy">🏆</div><h2>Case closed!</h2><div class="final" id="finalScore"></div><p class="small" id="finalText"></p><button class="restart" onclick="restartGame()">🔄 Investigate again</button>
+</div>
+</div>
+
+<script>
+const cases=[
+{icon:"🏨",scenario:"At 2:15 a.m., the hotel corridor camera stopped recording for six minutes. A guest later reported hearing footsteps and a door slam. The suspect's room was directly opposite the broken service door.",question:"Which deduction best describes the suspect's location?",opts:[
+["A","The suspect must have been in the corridor.","past location"],
+["B","The suspect must have been checking the service door.","ongoing activity"],
+["C","The suspect must have been extremely careful.","past state"],
+["D","The suspect must have been a hotel employee.","identity"]],ans:0,ex:"The question asks where the suspect probably was. That calls for a past state/location: must have been in the corridor."},
+{icon:"💻",scenario:"Investigators found a login from the victim's laptop at 23:47. The screen showed an unsent email, and the keyboard was still warm when police arrived.",question:"What is the strongest inference about what someone was doing?",opts:[
+["A","Someone must have been in the victim's house.","location"],
+["B","Someone must have been using the laptop.","ongoing activity"],
+["C","Someone must have been a skilled hacker.","identity"],
+["D","Someone must have been exhausted.","past state"]],ans:1,ex:"The warm keyboard and active email strongly suggest an activity in progress: someone must have been using the laptop."},
+{icon:"🎨",scenario:"A valuable painting disappeared from a gallery. The alarm was disabled at 8:05 p.m., exactly when the security guard left for his break. The access card was later found in his locker.",question:"What is the most reasonable conclusion about the guard?",opts:[
+["A","He must have been stealing the painting.","ongoing activity"],
+["B","He must have been in the gallery.","location"],
+["C","He must have been involved in the incident.","strong deduction"],
+["D","He must have been nervous.","past state"]],ans:2,ex:"The evidence points to involvement, not necessarily the exact action of stealing. “Must have been involved” is the strongest defensible deduction."},
+{icon:"🚪",scenario:"At 1 a.m., residents heard repeated knocking from the apartment upstairs. A neighbour saw a figure standing outside the flat for nearly ten minutes before the lights came on.",question:"What was the figure probably doing?",opts:[
+["A","The figure must have been inside the flat.","location"],
+["B","The figure must have been waiting for someone to open the door.","ongoing activity"],
+["C","The figure must have been the tenant.","identity"],
+["D","The figure must have been suspicious.","state/opinion"]],ans:1,ex:"The ten-minute wait and repeated knocking indicate an activity in progress: the figure must have been waiting."},
+{icon:"🚗",scenario:"A stolen car was recovered two hours later with the engine still warm. The driver's seat was pushed far back, although the owner is quite short.",question:"Which deduction concerns the driver's past physical state?",opts:[
+["A","The driver must have been tall.","past state"],
+["B","The driver must have been driving for hours.","ongoing activity"],
+["C","The driver must have been in a hurry.","past state"],
+["D","The driver must have been hiding.","ongoing activity"]],ans:0,ex:"The seat position provides a clue about the driver's physical characteristic: the driver must have been tall."},
+{icon:"🧤",scenario:"A pair of wet gloves was found on a windowsill inside a locked office. Rain had started twenty minutes earlier. Security footage shows no one entering through the main door.",question:"What activity is the evidence most consistent with?",opts:[
+["A","The intruder must have been wet.","state"],
+["B","The intruder must have been inside the office.","location"],
+["C","The intruder must have been climbing through the window.","ongoing activity"],
+["D","The intruder must have been a professional criminal.","identity"]],ans:2,ex:"Wet gloves inside and no entry through the main door make an ongoing action the best explanation: the intruder must have been climbing through the window."},
+{icon:"📞",scenario:"Police found 17 unanswered calls from the same number between 9:00 and 9:30 p.m. The suspect's phone was switched off at 9:32.",question:"Which sentence describes a likely activity in progress before the phone was switched off?",opts:[
+["A","The suspect must have been receiving the calls.","ongoing activity"],
+["B","The suspect must have been at home.","location"],
+["C","The suspect must have been angry.","past state"],
+["D","The suspect must have been the caller.","identity"]],ans:0,ex:"The repeated calls immediately before the phone was switched off make an ongoing activity the focus: the suspect must have been receiving the calls."},
+{icon:"🏦",scenario:"A bank vault was opened at 3:18 a.m. without triggering the alarm. The security guard's coffee was found untouched on his desk, and his chair was still pulled out.",question:"What can investigators reasonably infer about the guard at that time?",opts:[
+["A","He must have been outside the bank.","location"],
+["B","He must have been monitoring the cameras.","ongoing activity"],
+["C","He must have been away from his desk.","past state/location"],
+["D","He must have been responsible for the robbery.","identity"]],ans:2,ex:"The untouched coffee and pulled-out chair suggest he was not at his desk. We should not jump to the stronger claim that he was responsible."},
+{icon:"📷",scenario:"A neighbour's camera captured a blurred figure outside the jewellery shop at 4:06 a.m. The figure repeatedly looked towards the road and checked a phone.",question:"What was the figure most likely doing?",opts:[
+["A","The figure must have been outside the shop.","location"],
+["B","The figure must have been waiting for someone.","ongoing activity"],
+["C","The figure must have been nervous.","state"],
+["D","The figure must have been the thief.","identity"]],ans:1,ex:"Looking towards the road and repeatedly checking a phone suggest the person was waiting for someone — an activity in progress."},
+{icon:"🗝️",scenario:"The museum's side door was found unlocked at 6 a.m. A keycard belonging to the night manager was inside the lock. The manager insists he never used that door.",question:"Which conclusion is most appropriate if the evidence strongly contradicts his statement?",opts:[
+["A","The manager must have been using the side door.","ongoing activity"],
+["B","The manager must have been inside the museum.","location"],
+["C","The manager must have been involved in opening the door.","strong deduction"],
+["D","The manager must have been lying about everything.","overgeneralisation"]],ans:2,ex:"The keycard provides strong evidence of involvement in opening the door, but it does not prove every detail of his statement was false."}
+];
+
+let current=0,score=0,answered=false;
+const $=id=>document.getElementById(id);
+function render(){
+ answered=false; const c=cases[current];
+ $("label").textContent=`Case ${current+1} of ${cases.length}`;
+ $("icon").textContent=c.icon; $("scenario").textContent=c.scenario; $("question").textContent=c.question;
+ $("score").textContent=score; $("total").textContent=cases.length; $("bar").style.width=(current/cases.length*100)+"%";
+ $("feedback").className="feedback"; $("feedback").innerHTML=""; $("next").style.display="none"; $("options").innerHTML="";
+ c.opts.forEach((o,i)=>{let b=document.createElement("button");b.className="option";b.innerHTML=`<b>${o[0]} — ${o[2]}</b>${o[1]}`;b.onclick=()=>choose(i);$("options").appendChild(b)});
+}
+function choose(i){
+ if(answered)return; answered=true; const c=cases[current]; [...$("options").children].forEach(b=>b.disabled=true);
+ let f=$("feedback");
+ if(i===c.ans){score++;f.className="feedback good";f.innerHTML=`✅ <b>Excellent deduction.</b><br>${c.ex}`}
+ else{f.className="feedback bad";f.innerHTML=`❌ <b>Look again at the evidence.</b><br>The best answer is <b>${c.opts[c.ans][0]} — ${c.opts[c.ans][1]}</b>.<br>${c.ex}`}
+ $("score").textContent=score;$("next").style.display="inline-block";
+}
+$("next").onclick=()=>{current++;if(current>=cases.length)endGame();else render()};
+$("restart").onclick=restartGame;
+function endGame(){
+ $("game").style.display="none";$("end").style.display="block";$("bar").style.width="100%";$("finalScore").textContent=`${score} / ${cases.length}`;
+ $("finalText").textContent=score>=9?"Outstanding. Your deductions are worthy of a senior detective. 🔥":score>=7?"Strong work. You can distinguish states from actions in the past. 🕵️":"Good investigation. Review the Grammar Kit and try again.";
+}
+function restartGame(){current=0;score=0;$("game").style.display="block";$("end").style.display="none";render()}
+render();
+</script>
+</body>
+</html>
