@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crime Scene Investigator — Must Have Been</title>
+<style>
+  :root{
+    --bg:#111827; --panel:#1f2937; --panel2:#273449; --accent:#f59e0b;
+    --accent2:#38bdf8; --good:#22c55e; --bad:#ef4444; --text:#f8fafc; --muted:#cbd5e1;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(135deg,#0b1020,#172033 55%,#101827);color:var(--text);min-height:100vh}
+  .wrap{max-width:1050px;margin:auto;padding:24px}
+  header{display:flex;justify-content:space-between;gap:15px;align-items:center;margin-bottom:18px}
+  h1{font-size:clamp(28px,4vw,46px);margin:0}
+  .subtitle{color:var(--muted);margin:6px 0 0;font-size:16px}
+  .badge{background:#2b2110;border:1px solid #805b13;color:#fbbf24;padding:10px 14px;border-radius:999px;font-weight:700;white-space:nowrap}
+  .progress{height:9px;background:#374151;border-radius:10px;overflow:hidden;margin:16px 0 22px}
+  .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent),#f97316);transition:.35s}
+  .card{background:rgba(31,41,55,.95);border:1px solid #3b4658;border-radius:22px;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,.28)}
+  .scene{display:flex;gap:22px;align-items:flex-start}
+  .icon{font-size:60px;background:#111827;border-radius:18px;padding:14px;min-width:92px;text-align:center}
+  .case-no{color:var(--accent2);font-weight:800;text-transform:uppercase;letter-spacing:1px;font-size:13px}
+  .clue{font-size:21px;line-height:1.55;margin:10px 0 4px}
+  .hint{color:var(--muted);font-size:14px}
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+  button{font:inherit}
+  .option{background:var(--panel2);color:var(--text);border:1px solid #46536a;border-radius:15px;padding:16px;text-align:left;cursor:pointer;transition:.2s}
+  .option:hover{transform:translateY(-2px);border-color:var(--accent2);background:#304057}
+  .option strong{display:block;color:#fbbf24;margin-bottom:5px}
+  .feedback{margin-top:18px;padding:15px 17px;border-radius:14px;display:none;line-height:1.5}
+  .feedback.good{display:block;background:#0d2a1a;border:1px solid #166534}
+  .feedback.bad{display:block;background:#35171b;border:1px solid #991b1b}
+  .grammar{margin-top:22px;background:#111827;border-radius:16px;padding:18px}
+  .grammar h3{margin:0 0 10px;color:#fbbf24}
+  .formula{font-size:18px;margin:8px 0}
+  .footer{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:12px}
+  .score{font-weight:800}
+  .next,.restart{border:0;border-radius:12px;padding:12px 20px;font-weight:800;cursor:pointer}
+  .next{background:var(--accent);color:#171717;display:none}
+  .restart{background:#334155;color:white}
+  .end{text-align:center;display:none}
+  .big-score{font-size:52px;font-weight:900;color:#fbbf24;margin:8px}
+  .mini{color:var(--muted)}
+  @media(max-width:700px){.options{grid-template-columns:1fr}.scene{flex-direction:column}.icon{min-width:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>🕵️ Crime Scene Investigator</h1>
+    <p class="subtitle">Can you reconstruct the crime using <b>must have been</b> and <b>must have been doing</b>?</p>
+  </div>
+  <div class="badge">A2–B1 Grammar Game</div>
+</header>
+
+<div class="progress"><div class="bar" id="bar"></div></div>
+
+<div class="card" id="game">
+  <div class="scene">
+    <div class="icon" id="icon">🔎</div>
+    <div>
+      <div class="case-no" id="caseNo"></div>
+      <div class="clue" id="clue"></div>
+      <div class="hint" id="hint"></div>
+    </div>
+  </div>
+  <div class="options" id="options"></div>
+  <div class="feedback" id="feedback"></div>
+
+  <div class="grammar">
+    <h3>🧠 Detective's Grammar Kit</h3>
+    <div class="formula"><b>must have been + adjective / noun / place</b> → a conclusion about a past <b>state</b></div>
+    <div class="formula"><b>must have been + verb-ing</b> → a conclusion about an <b>activity in progress</b></div>
+    <div class="hint">Example: “The window is open. The thief <b>must have been here</b>.” / “The lights were on. Someone <b>must have been working</b>.”</div>
+  </div>
+
+  <div class="footer">
+    <div class="score">Score: <span id="score">0</span> / <span id="total">10</span></div>
+    <button class="next" id="next">Next case →</button>
+    <button class="restart" id="restart">Restart</button>
+  </div>
+</div>
+
+<div class="card end" id="end">
+  <div style="font-size:64px">🏆</div>
+  <h2>Case closed!</h2>
+  <div class="big-score" id="finalScore"></div>
+  <p class="mini" id="finalText"></p>
+  <button class="restart" onclick="restartGame()">🔄 Investigate again</button>
+</div>
+</div>
+
+<script>
+const cases = [
+ {icon:"🏠", clue:"The kitchen window was broken. There was glass on the floor and a muddy footprint near the sink.", hint:"What can you conclude about the person?", opts:[
+  ["A","The burglar must have been inside.","state / place"],
+  ["B","The burglar must have been running.","activity in progress"],
+  ["C","The burglar must have been tired.","state"],
+  ["D","The burglar must have been at work.","place / state"]], ans:0,
+  explain:"We are making a conclusion about the burglar's past location: he must have been inside."},
+ {icon:"💻", clue:"The office computer was still warm, and a document had been opened five minutes ago.", hint:"Focus on an activity that was probably in progress.", opts:[
+  ["A","Someone must have been in the office.","state / place"],
+  ["B","Someone must have been using the computer.","activity in progress"],
+  ["C","Someone must have been nervous.","state"],
+  ["D","Someone must have been a criminal.","identity"]], ans:1,
+  explain:"The evidence suggests an activity in progress: someone must have been using the computer."},
+ {icon:"💰", clue:"The safe was open, but there was no money inside. The security camera showed a stranger entering at midnight.", hint:"Where must the stranger have been?", opts:[
+  ["A","The stranger must have been stealing the money.","activity"],
+  ["B","The stranger must have been careful.","state"],
+  ["C","The stranger must have been in the building.","place"],
+  ["D","The stranger must have been sleeping.","activity"]], ans:2,
+  explain:"This is a conclusion about location: the stranger must have been in the building."},
+ {icon:"🚗", clue:"A neighbour heard an engine at 2 a.m. The next morning, a car was missing from the garage.", hint:"What was probably happening at 2 a.m.?", opts:[
+  ["A","Someone must have been taking the car.","activity in progress"],
+  ["B","Someone must have been in the garage.","place"],
+  ["C","Someone must have been rich.","state"],
+  ["D","Someone must have been the owner.","identity"]], ans:0,
+  explain:"The engine noise and missing car suggest someone must have been taking the car."},
+ {icon:"👜", clue:"The victim's bag was found on a bench. Her phone and wallet were still inside.", hint:"Make a conclusion about her past state.", opts:[
+  ["A","She must have been leaving the park.","activity"],
+  ["B","She must have been alone.","state"],
+  ["C","She must have been in the park.","place"],
+  ["D","She must have been carrying the bag.","activity/state"]], ans:1,
+  explain:"The evidence can support a state: she must have been alone. (The bag being left behind is the clue.)"},
+ {icon:"🧤", clue:"Two wet gloves were found beside the back door. It had been raining heavily.", hint:"What activity was probably happening?", opts:[
+  ["A","The suspect must have been wet.","state"],
+  ["B","The suspect must have been outside.","place"],
+  ["C","The suspect must have been climbing the fence.","activity in progress"],
+  ["D","The suspect must have been a neighbour.","identity"]], ans:2,
+  explain:"The wet gloves by the back door suggest the suspect must have been climbing the fence."},
+ {icon:"📱", clue:"The suspect's phone was found in the shop, but the suspect was arrested three streets away.", hint:"Choose a conclusion about location.", opts:[
+  ["A","He must have been talking.","activity"],
+  ["B","He must have been in the shop.","place"],
+  ["C","He must have been angry.","state"],
+  ["D","He must have been running away.","activity"]], ans:1,
+  explain:"The phone was found in the shop, so the suspect must have been in the shop at some point."},
+ {icon:"🪟", clue:"A neighbour saw a shadow moving behind the curtains at 11 p.m.", hint:"What was probably happening?", opts:[
+  ["A","Someone must have been inside.","state / place"],
+  ["B","Someone must have been hiding.","activity in progress"],
+  ["C","Someone must have been nervous.","state"],
+  ["D","Someone must have been a burglar.","identity"]], ans:1,
+  explain:"A moving shadow suggests an activity in progress: someone must have been hiding."},
+ {icon:"🔦", clue:"The lights in the museum were off, but a torch was found on the floor near a locked display case.", hint:"What activity is the strongest conclusion?", opts:[
+  ["A","Someone must have been in the museum.","place"],
+  ["B","Someone must have been careful.","state"],
+  ["C","Someone must have been examining the display case.","activity in progress"],
+  ["D","Someone must have been a guard.","identity"]], ans:2,
+  explain:"The torch near the display case suggests someone must have been examining it."},
+ {icon:"👣", clue:"Fresh footprints led from the garden to the open back door. The footprints stopped in the hallway.", hint:"What can you conclude about the suspect's location?", opts:[
+  ["A","The suspect must have been walking through the garden.","activity"],
+  ["B","The suspect must have been in the house.","place"],
+  ["C","The suspect must have been frightened.","state"],
+  ["D","The suspect must have been hiding.","activity"]], ans:1,
+  explain:"The footprints stop inside, so the suspect must have been in the house."}
+];
+
+let current=0, score=0, answered=false;
+const $=id=>document.getElementById(id);
+
+function render(){
+  answered=false;
+  const c=cases[current];
+  $("caseNo").textContent=`Case ${current+1} of ${cases.length}`;
+  $("icon").textContent=c.icon;
+  $("clue").textContent=c.clue;
+  $("hint").textContent=c.hint;
+  $("score").textContent=score;
+  $("total").textContent=cases.length;
+  $("bar").style.width=((current)/cases.length*100)+"%";
+  $("feedback").className="feedback";
+  $("feedback").innerHTML="";
+  $("next").style.display="none";
+  $("options").innerHTML="";
+  c.opts.forEach((o,i)=>{
+    const b=document.createElement("button");
+    b.className="option";
+    b.innerHTML=`<strong>${o[0]} — ${o[2]}</strong>${o[1]}`;
+    b.onclick=()=>choose(i);
+    $("options").appendChild(b);
+  });
+}
+function choose(i){
+  if(answered) return;
+  answered=true;
+  const c=cases[current];
+  const buttons=[...$("options").children];
+  buttons.forEach(b=>b.disabled=true);
+  const f=$("feedback");
+  if(i===c.ans){
+    score++;
+    f.className="feedback good";
+    f.innerHTML=`✅ <b>Excellent detective work!</b><br>${c.explain}`;
+  }else{
+    f.className="feedback bad";
+    f.innerHTML=`❌ <b>Not quite.</b><br>The best answer is <b>${c.opts[c.ans][0]}</b>: ${c.opts[c.ans][1]}.<br>${c.explain}`;
+  }
+  $("score").textContent=score;
+  $("next").style.display="inline-block";
+}
+$("next").onclick=()=>{
+  current++;
+  if(current>=cases.length) endGame(); else render();
+};
+$("restart").onclick=restartGame;
+function endGame(){
+  $("game").style.display="none";
+  $("end").style.display="block";
+  $("bar").style.width="100%";
+  $("finalScore").textContent=`${score} / ${cases.length}`;
+  let msg=score>=9?"You're a master detective! 🔥":score>=7?"Great work — your grammar evidence is strong! 🕵️":"Good start! Review the Grammar Kit and investigate again.";
+  $("finalText").textContent=msg;
+}
+function restartGame(){
+  current=0; score=0;
+  $("game").style.display="block";
+  $("end").style.display="none";
+  render();
+}
+render();
+</script>
+</body>
+</html>
